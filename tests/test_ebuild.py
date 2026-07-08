@@ -64,7 +64,7 @@ class TestEbuildOutput(unittest.TestCase):
         ebuild.add_run_depend('p2os_driver')
         ebuild.add_build_depend('cmake', False)
         ebuild_text = ebuild.get_ebuild_text('Open Source Robotics Foundation', 'BSD')
-        self.assertTrue('dev-util/cmake' in ebuild_text)
+        self.assertTrue('dev-build/cmake' in ebuild_text)
 
     def test_external_run_depend(self):
         """Test External Run Dependency"""
@@ -72,7 +72,7 @@ class TestEbuildOutput(unittest.TestCase):
         ebuild.add_run_depend('p2os_driver')
         ebuild.add_run_depend('cmake', False)
         ebuild_text = ebuild.get_ebuild_text('Open Source Robotics Foundation', 'BSD')
-        self.assertTrue('dev-util/cmake' in ebuild_text)
+        self.assertTrue('dev-build/cmake' in ebuild_text)
 
     def test_rdepend_depend(self):
         """Test Disjoint RDEPEND/DEPEND"""
@@ -106,6 +106,15 @@ class TestEbuildOutput(unittest.TestCase):
         ebuild.add_run_depend('p2os_driver', True)
         self.assertTrue('p2os_driver' in ebuild.rdepends)
         self.assertFalse('p2os_driver' in ebuild.rdepends_external)
+
+    def test_cross_distro_depend(self):
+        """Test dependency resolving to a base distribution"""
+        ebuild = self.get_ebuild()
+        ebuild.add_run_depend('turtlesim', True, 'base')
+        ebuild.add_build_depend('std_msgs', True, 'base')
+        ebuild_text = ebuild.get_ebuild_text('Open Source Robotics Foundation', 'BSD')
+        self.assertTrue('ros-base/turtlesim' in ebuild_text)
+        self.assertTrue('ros-base/std_msgs' in ebuild_text)
 
     def test_depend_only_pkgs(self):
         """Test DEPEND only packages"""

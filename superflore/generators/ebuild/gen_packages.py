@@ -186,21 +186,35 @@ def _gen_ebuild_for_package(
 
     pkg_keywords = ['x86', 'amd64', 'arm', 'arm64']
 
+    def get_dep_distro(dep_name):
+        if dep_name in distro.release_packages:
+            repo_name = distro.release_packages[dep_name].repository_name
+            if repo_name in distro.repositories:
+                release_repo = distro.repositories[repo_name] \
+                    .release_repository
+                if release_repo:
+                    return getattr(release_repo, 'origin_distro', distro.name)
+        return distro.name
+
     # add run dependencies
     for rdep in pkg_run_deps:
-        pkg_ebuild.add_run_depend(rdep, rdep in pkg_names[0])
+        pkg_ebuild.add_run_depend(
+            rdep, rdep in pkg_names[0], get_dep_distro(rdep))
 
     # add build dependencies
     for bdep in pkg_build_deps:
-        pkg_ebuild.add_build_depend(bdep, bdep in pkg_names[0])
+        pkg_ebuild.add_build_depend(
+            bdep, bdep in pkg_names[0], get_dep_distro(bdep))
 
     # add build tool dependencies
     for tdep in pkg_buildtool_deps:
-        pkg_ebuild.add_build_depend(tdep, tdep in pkg_names[0])
+        pkg_ebuild.add_build_depend(
+            tdep, tdep in pkg_names[0], get_dep_distro(tdep))
 
     # add test dependencies
     for test_dep in pkg_test_deps:
-        pkg_ebuild.add_test_depend(test_dep, test_dep in pkg_names[0])
+        pkg_ebuild.add_test_depend(
+            test_dep, test_dep in pkg_names[0], get_dep_distro(test_dep))
 
     # add keywords
     for key in pkg_keywords:

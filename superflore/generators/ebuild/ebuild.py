@@ -56,11 +56,11 @@ class Ebuild(object):
         self.src_uri = None
         self.upstream_license = ["LGPL-2"]
         self.keys = list()
-        self.rdepends = list()
+        self.rdepends = {}
         self.rdepends_external = list()
-        self.depends = list()
+        self.depends = {}
         self.depends_external = list()
-        self.tdepends = list()
+        self.tdepends = {}
         self.tdepends_external = list()
         self.distro = None
         self.cmake_package = True
@@ -74,29 +74,31 @@ class Ebuild(object):
         self.patches = list()
         self.illegal_desc_chars = '()[]{}|^$\\#\t\n\r\v\f\'"`'
 
-    def add_build_depend(self, depend, internal=True):
+    def add_build_depend(self, depend, internal=True, distro_name=None):
         if depend in self.rdepends:
             return
         elif depend in self.rdepends_external:
             return
+        elif depend in self.depends:
+            return
         elif internal:
-            self.depends.append(depend)
+            self.depends[depend] = distro_name or self.distro
         else:
             self.depends_external.append(depend)
 
-    def add_run_depend(self, rdepend, internal=True):
+    def add_run_depend(self, rdepend, internal=True, distro_name=None):
         if rdepend in depend_only_pkgs and not internal:
             self.depends_external.append(rdepend)
         elif internal:
-            self.rdepends.append(rdepend)
+            self.rdepends[rdepend] = distro_name or self.distro
         else:
             self.rdepends_external.append(rdepend)
 
-    def add_test_depend(self, tdepend, internal=True):
+    def add_test_depend(self, tdepend, internal=True, distro_name=None):
         if not internal:
             self.tdepends_external.append(tdepend)
         else:
-            self.tdepends.append(tdepend)
+            self.tdepends[tdepend] = distro_name or self.distro
 
     def add_keyword(self, keyword, stable=False):
         self.keys.append(ebuild_keyword(keyword, stable))
@@ -187,11 +189,11 @@ class Ebuild(object):
             ret += 'IUSE="test"\n'
         # RDEPEND
         ret += "RDEPEND=\"\n"
-        for rdep in sorted(self.rdepends):
-            ret += "    " + "ros-" + self.distro + "/" + rdep + "\n"
+        for rdep, dep_distro in sorted(self.rdepends.items()):
+            ret += '    ' + 'ros-' + dep_distro + '/' + rdep + '\n'
         # internal test dependencies
-        for tdep in sorted(self.tdepends):
-            ret += "    " + "test? ( ros-" + self.distro + "/" + tdep + " )\n"
+        for tdep, dep_distro in sorted(self.tdepends.items()):
+            ret += '    ' + 'test? ( ros-' + dep_distro + '/' + tdep + ' )\n'
         for rdep in sorted(self.rdepends_external):
             try:
                 for res in resolve_dep(rdep, 'gentoo', self.distro)[0]:
@@ -212,8 +214,8 @@ class Ebuild(object):
         ret += "\"\n"
         # DEPEND
         ret += "DEPEND=\"${RDEPEND}\n"
-        for bdep in sorted(self.depends):
-            ret += "    " + 'ros-{0}/{1}\n'.format(self.distro, bdep)
+        for bdep, dep_distro in sorted(self.depends.items()):
+            ret += '    ' + 'ros-{0}/{1}\n'.format(dep_distro, bdep)
         for bdep in sorted(self.depends_external):
             try:
                 for res in resolve_dep(bdep, 'gentoo', self.distro)[0]:
